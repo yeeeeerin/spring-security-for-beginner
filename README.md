@@ -5,6 +5,7 @@
 
 
 ##step1 - 유저 모델링
+
 **Member class**
 ```java
 @Data
@@ -39,7 +40,8 @@ public class Member {
 `org.springframework.security.core.userdetails.User`와 같이 
 `spring security`에 이미 `user`가 있음으로 `class`이름을 `User`로 하지 않는 것을 권장합니다.
 
-
+  
+    
 
 **MemberRole**
 ```java
