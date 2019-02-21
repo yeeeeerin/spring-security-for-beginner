@@ -158,8 +158,27 @@ public @interface EnableWebSecurity {
 ```
 `EnableWebSecurity`의 구현을 보면 `WebSecurityConfiguration`가 `import`되어있을음 알 수 있습니다.
 <br></br>
-마지막으로 `controller`를 작성하겠습니다. 
 
+저는 추가적으로 h2 DB에 접근하기 위한 설정을 `SecurityConfig`에 추가적으로 넣어줬습니다.
+
+`HttpSecurity`는 http 요청에 대해 웹기반 보안기능을 구성할 수 있습니다.
+```java
+@Override
+    protected void configure(HttpSecurity http) throws Exception {
+
+        http
+                .headers().frameOptions().disable();
+        http
+                .csrf().disable();
+        http
+                .authorizeRequests()
+                .antMatchers("/h2-console/**").permitAll();
+    }
+```
+
+<br></br>
+
+마지막으로 `controller`를 작성하겠습니다. 
 **AuthController**
 ```java
 @RestController
