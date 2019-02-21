@@ -64,6 +64,120 @@ public enum  MemberRole {
 `Spring Security`규정상 `role`은 기본적으로 '`ROLE_`'로 시작해야 합니다. 
 그래야 권한을 인식할 수 있습니다. '`ROLE_`'이라는 접두어를 다른 접두어로 변경하고 
 싶으면 추가적으로 설정이 필요함으로 `step1`에서는 넘어가도록 하겠습니다.
+
+<br></br>
+
+## step2 - 회원가입 
+
+우선 데이터베이스에 회원 정보를 넣어주기 위해 `repository`와 `service`를 생성하겠습니다.
+
+**MemberRepository**
+```java
+@Repository
+public interface MemberRepository extends JpaRepository<Member, Long> {
+
+    Optional<Member> findByEmail(String email);
+
+}
+
+```
+**MemberService**
+```java
+@Service
+@Slf4j
+public class MemberService implements UserDetailsService {
+
+    @Autowired
+    MemberRepository memberRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Transactional
+    public Member singUp(Member member){
+        log.info(member.getEmail());
+        member.setPassword(
+                passwordEncoder.encode(member.getPassword())
+        );
+        member.setRole(MemberRole.USER);
+
+        return memberRepository.save(member);
+    }
+
+    //todo 로그인 시 사용
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return null;
+    }
+
+}
+```
+
+회원정보를 DB에 넣을 때, 비밀번호를 암호화 하기위해 `SecurityConfig`파일을 작성 후
+`PasswordEncoder`를 빈으로 설정하겠습니다.
+
+`SecurityConfig`에서는 비밀번호 암호화 이외에도 여러 `security`관련 설정을 지원힙니다.
+
+
+```java
+@Configuration
+@EnableWebSecurity // @Configuration 클래스에 WebSecurityConfigurerAdapter를 확장하거나 WebSecurityConfigurer를 정의하여 보안을 활성화
+@EnableGlobalMethodSecurity(prePostEnabled = true) //추 후에 @PreAuthorize 를 이용하기 위해 사용
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Bean
+    public PasswordEncoder getPasswordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+}
+```
+* `@EnableWebSecurity` 에노테이션은 `@Configuration` 
+클래스에 `WebSecurityConfigurerAdapter`를 확장하거나 
+`WebSecurityConfigurer`를 정의하여 보안을 활성화 하는 역할을 합니다.
+
+* `@EnableGlobalMethodSecurity(prePostEnabled = true)`은 추 후에 
+`@PreAuthorize` 를 이용하기 위함입니다.
+
+🔓🔓 **@EnableWebSecurity** 
+
+```java
+@Retention(value = java.lang.annotation.RetentionPolicy.RUNTIME)
+@Target(value = { java.lang.annotation.ElementType.TYPE })
+@Documented 
+@Import({ WebSecurityConfiguration.class,
+		SpringWebMvcImportSelector.class,
+		OAuth2ImportSelector.class })
+@EnableGlobalAuthentication
+@Configuration
+public @interface EnableWebSecurity {
+	boolean debug() default false;
+}
+```
+`EnableWebSecurity`의 구현을 보면 `WebSecurityConfiguration`가 `import`되어있을음 알 수 있습니다.
+   
+<br></br>
+
+마지막으로 `controller`를 작성하겠습니다. 
+
+**AuthController**
+```java
+@RestController
+public class AuthController {
+
+    @Autowired
+    MemberService memberService;
+
+    @PostMapping("/signUp")
+    public String signUp(@RequestBody Member member){
+        memberService.singUp(member);
+        return "ok";
+    }
+}
+```
+
+
+
  
 
 
