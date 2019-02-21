@@ -157,7 +157,6 @@ public @interface EnableWebSecurity {
 }
 ```
 `EnableWebSecurity`의 구현을 보면 `WebSecurityConfiguration`가 `import`되어있을음 알 수 있습니다.
-
 <br></br>
 마지막으로 `controller`를 작성하겠습니다. 
 
