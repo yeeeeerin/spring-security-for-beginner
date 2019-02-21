@@ -176,7 +176,6 @@ public @interface EnableWebSecurity {
     }
 ```
 <br></br>
-
 마지막으로 `controller`를 작성하겠습니다. 
 **AuthController**
 ```java
