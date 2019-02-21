@@ -175,7 +175,6 @@ public @interface EnableWebSecurity {
                 .antMatchers("/h2-console/**").permitAll();
     }
 ```
-
 <br></br>
 
 마지막으로 `controller`를 작성하겠습니다. 
