@@ -3,8 +3,10 @@
 
 스프링시큐리티를 처음 공부하시는 여러분을 위한 초보자 가이드 입니다.
 
+* [step1 - 유저 모델링](#step1) 
+* [step2 - 회원가입 ](#step2)
 
-## step1 - 유저 모델링
+<h2 id="step1">step1 - 유저 모델링 </h2>
 
 **Member class**
 ```java
@@ -67,7 +69,7 @@ public enum  MemberRole {
 
 <br></br>
 
-## step2 - 회원가입 
+<div id="step2"><h2> step2 - 회원가입</h2></div>
 
 우선 데이터베이스에 회원 정보를 넣어주기 위해 `repository`와 `service`를 생성하겠습니다.
 
@@ -155,9 +157,8 @@ public @interface EnableWebSecurity {
 }
 ```
 `EnableWebSecurity`의 구현을 보면 `WebSecurityConfiguration`가 `import`되어있을음 알 수 있습니다.
-   
-<br></br>
 
+<br></br>
 마지막으로 `controller`를 작성하겠습니다. 
 
 **AuthController**
