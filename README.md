@@ -5,6 +5,7 @@
 
 * [step1 - 유저 모델링](#step1) 
 * [step2 - 회원가입 ](#step2)
+* [step3 - 로그인 ](#step3)
 
 <h2 id="step1">step1 - 유저 모델링 </h2>
 
@@ -177,6 +178,7 @@ public @interface EnableWebSecurity {
 ```
 <br></br>
 마지막으로 `controller`를 작성하겠습니다. 
+
 **AuthController**
 ```java
 @RestController
@@ -193,6 +195,11 @@ public class AuthController {
 }
 ```
 
+<br></br>
+
+<h2 id="step3">step3 - 로그인 </h2>
+
+로그인은 토큰형식으로 진행하겠습니다. 
 
 
  

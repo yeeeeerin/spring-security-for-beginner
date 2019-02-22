@@ -18,7 +18,7 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
 
-    @Column(name = "MEMBER_EMAIL")
+    @Column(name = "MEMBER_EMAIL", unique = true)
     private String email;
 
     @Column(name = "MEMBER_USERNAME")
