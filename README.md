@@ -124,8 +124,8 @@ public class MemberService implements UserDetailsService {
 
 ```java
 @Configuration
-@EnableWebSecurity // @Configuration 클래스에 WebSecurityConfigurerAdapter를 확장하거나 WebSecurityConfigurer를 정의하여 보안을 활성화
-@EnableGlobalMethodSecurity(prePostEnabled = true) //추 후에 @PreAuthorize 를 이용하기 위해 사용
+@EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true) 
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
@@ -199,14 +199,26 @@ public class AuthController {
 
 <h2 id="step3">step3 - 로그인 (bad.ver) </h2>
 
-이 부분은 최소한의 부분으로 구현한 로그인절차입니다. 로그인이 성공하면 토큰을
+이 부분은 최소한의 구성으로 구현한 로그인절차입니다. 로그인이 성공하면 토큰을
 주는 방식으로 진행하겠습니다.
 
 bad version에서 로그인 요청이 들어왔을 때 절차는
+ **요청 -> filter -> 응답** 이러한 순서로 동작합니다.
+ 
+먼저 인증을 할 때 `UserDetailsService`의 `loadUserByUsername(String username)`
+로 `DB`로부터 유저정보를 가져오게 됩니다.
+`UserDetailsService`를 상속받은 `MemberService`의
+`loadUserByUsername`를 구현합니다.
+```java
+public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Member member = memberRepository.findByEmail(email).get();
 
-**요청 -> filter -> 응답**
-
-이러한 순서로 동작합니다.
+        if(member == null){
+            throw new UsernameNotFoundException("회원이 없습니다.");
+        }
+        return SecurityMember.getMemberDetails(member);
+    }
+```
 
 먼저 `filter`를 구현하기 전에 `jwt`를 생성할 클래스와 `loginDto` 그리고 
 `UserDetails`를 구현하겠습니다.
@@ -221,8 +233,137 @@ bad version에서 로그인 요청이 들어왔을 때 절차는
 >인증합니다. 
 
 
+**LoginMemberDto**
+```java
+@Data
+public class LoginMemberDto {
+    String email;
+    String password;
+}
+```
+단순한 `email`과 `password`를 받는 `dto`입니다.
+
+**SecurityMember**
+```java
+public class SecurityMember extends User {
+
+    public SecurityMember(String username, String password, Collection<? extends GrantedAuthority> authorities) {
+        super(username, password, authorities);
+    }
+
+    public static SecurityMember getMemberDetails(Member member) {
+        return new SecurityMember(member.getEmail(),member.getPassword(),parseAuthorities(member.getRole()));
+    }
+
+    private static List<SimpleGrantedAuthority> parseAuthorities(MemberRole role) {
+        return Arrays.asList(role).stream()
+                .map(r -> new SimpleGrantedAuthority(r.getRoleName()))
+                .collect(Collectors.toList());
+    }
+}
+```
+
+`User`는 `org.springframework.security.core.userdetails.User`으로
+`User`클래스를 보시면 `UserDetails`가 상속되어 있습니다. `UserDetails`를 직접
+`SecurityMember`에 상속하여 구현해도 되지만 `UserDetails`는 `interface`로 
+구성되어 있어 모든 함수를 `override`해야합니다.
+그러므로 `User`를 상속받는 방법으로 진행하겠습니다.
+
+`UserDtails`를 구성할 때 `role`을 `Collection<GrantedAuthority>` 으로 
+넘겨줘야합니다. 그래서 `parseAuthorities`메소드를 만들어 뒀습니다.
+저희는 `role`을 하나만 가지고 있다고 가정하고 파싱하겠습니다.
 
 
+**JwtFactory**
+```java
+@Slf4j
+@Component
+public class JwtFactory {
+
+    private static String SECRET = "TheSecret";
+
+    public String generateToken(String email) {
+        String token;
+
+        token = JWT.create()
+                .withIssuer("yerin")
+                .withClaim("EMAIL", email)
+                .sign(Algorithm.HMAC256(SECRET));
+
+        log.info("token -- "+token);
+
+        return token;
+
+    }
+
+}
+```
+`JWT`란 `Json Web Token`의 약자로 말 그래도 `json`으로 제공하는 토큰입니다.
+우리는 올바른 정보를 보내온 회원에게 토큰을 부여하고 추가적인 `api`를 이용할 때 
+별다른 로그인 없이 토큰을 통해서 권한을 확인할 수 있습니다.
+
+그러면 `JWT`토큰으로 어떻게 권한을 확인할 수 있을까?
+
+`JWT`의 기본 구조는
+* `Header`
+* `Payload`
+* `Signature`
+
+이렇게 3 부분으로 나뉩니다. 이 3 부분은 `.`으로 구분하여 아래와 같은 형식으로
+나타납니다.
+
+`aaaaaaa.bbbbbbb.zzzzzzz` 
+
+`JWT`를 조금 더 살펴보겠습니다.
+
+>Header
+```json
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
+```
+`Header`에는 암호화 알고리즘(`alg`)과 토큰의 타입(`typ`)으로 구성되어있습니다.
+
+>Payload
+```json
+{
+  "sub": "1234567890",
+  "name": "John Doe",
+  "admin": true
+}
+```
+`Payload`은 `clame`으로 구성되어 있습니다. 여기에 유저의 정보를 담습니다.
+주의해야할 점은 개인의 민감한 정보를 `clame`에 담지 않는것 입니다. 
+
+`JWT`토큰은 알고리즘만 알고있다면 해석이 가능함으로 개인정보 유출의
+위험이 있습니다.
+
+>Signature
+```json
+HMACSHA256(
+  base64UrlEncode(header) + "." +
+  base64UrlEncode(payload),
+  secret)
+```
+`Signature`은 `Header`,`Payload`값을 인코딩하고 `secret`값으로
+해쉬한 암호화 값입니다.
+
+우리가 작성한 코드로 `JWT`를 어떻게 구성하는지 살펴보겠습니다.
+```java
+String SECRET = "TheSecret";
+
+token = JWT.create()
+                .withIssuer("yerin")
+                .withClaim("EMAIL", email)
+                .sign(Algorithm.HMAC256(SECRET));
+```
+
+* `SECRET`은 `Signature` 부분에서 `secret`값으로 사용됩니다.
+* `withIssuer`와 `withClaim`은 `Payload`에 기록됩니다.
+
+<br>
+기본적으로 filter를 구성하기 위한 작업을 마쳤습니다.
 
 
 
