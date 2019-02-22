@@ -30,7 +30,7 @@ public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessing
     /*
     * todo urlmatcher랑 string 두개의 형식으로 생성자 생성하는거 설명하기
     * */
-    protected BasicLoginProcessingFilter(String defaultFilterProcessesUrl) {
+    public BasicLoginProcessingFilter(String defaultFilterProcessesUrl) {
         super(defaultFilterProcessesUrl);
     }
 
