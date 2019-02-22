@@ -5,7 +5,7 @@
 
 * [step1 - 유저 모델링](#step1) 
 * [step2 - 회원가입 ](#step2)
-* [step3 - 로그인 ](#step3)
+* [step3 - 로그인 (bad.ver) ](#step3)
 
 <h2 id="step1">step1 - 유저 모델링 </h2>
 
@@ -197,9 +197,33 @@ public class AuthController {
 
 <br></br>
 
-<h2 id="step3">step3 - 로그인 </h2>
+<h2 id="step3">step3 - 로그인 (bad.ver) </h2>
 
-로그인은 토큰형식으로 진행하겠습니다. 
+이 부분은 최소한의 부분으로 구현한 로그인절차입니다. 로그인이 성공하면 토큰을
+주는 방식으로 진행하겠습니다.
+
+bad version에서 로그인 요청이 들어왔을 때 절차는
+
+**요청 -> filter -> 응답**
+
+이러한 순서로 동작합니다.
+
+먼저 `filter`를 구현하기 전에 `jwt`를 생성할 클래스와 `loginDto` 그리고 
+`UserDetails`를 구현하겠습니다.
+
+>**이미 `Member`라는 유저 객체가 있는데 `UserDetails`는 뭔가요?**
+
+>`UserDetails`는 인증 객체로서 사용자 정보를 저장합니다.
+><--는 `javadoc`에서 발최한 부분으로 더욱 직관적으로 설명하자면 로그인할 때
+>필요한 `UserDetailsService` 의 `loadUserByUsername`함수를 보시면 
+>반환값이 `UserDetails`인 것을 볼 수 있습니다. 이렇듯 `springsecurity`
+>에서는 하나의 규격화된 `UserDetails`인터페이스를 상속 받은 클래스를 사용자로 인식하고
+>인증합니다. 
+
+
+
+
+
 
 
  
