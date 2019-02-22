@@ -11,7 +11,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-public class DefaultSecurityProvider implements AuthenticationProvider {
+public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
     @Autowired
     MemberService memberService;
