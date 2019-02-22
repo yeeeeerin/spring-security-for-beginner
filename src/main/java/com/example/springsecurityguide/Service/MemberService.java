@@ -3,6 +3,7 @@ package com.example.springsecurityguide.Service;
 
 import com.example.springsecurityguide.domain.Member;
 import com.example.springsecurityguide.domain.MemberRole;
+import com.example.springsecurityguide.domain.SecurityMember;
 import com.example.springsecurityguide.repository.MemberRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,10 +35,14 @@ public class MemberService implements UserDetailsService {
         return memberRepository.save(member);
     }
 
-    //todo 로그인 시 사용
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return null;
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Member member = memberRepository.findByEmail(email).get();
+
+        if(member == null){
+            throw new UsernameNotFoundException("회원이 없습니다.");
+        }
+        return SecurityMember.getMemberDetails(member);
     }
 
 }
