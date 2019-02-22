@@ -12,8 +12,9 @@ import java.util.stream.Collectors;
 
 public class SecurityMember extends User {
 
-    public SecurityMember(String username, String password, Collection<? extends GrantedAuthority> authorities) {
-        super(username, password, authorities);
+
+    public SecurityMember(String email, String password, Collection<? extends GrantedAuthority> authorities) {
+        super(email, password, authorities);
     }
 
     public static SecurityMember getMemberDetails(Member member) {
