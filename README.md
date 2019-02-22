@@ -207,7 +207,7 @@ bad version에서 로그인 요청이 들어왔을 때 절차는
  
 먼저 인증을 할 때 `UserDetailsService`의 `loadUserByUsername(String username)`
 로 `DB`로부터 유저정보를 가져오게 됩니다.
-`UserDetailsService`를 상속받은 `MemberService`의
+그러므로 `UserDetailsService`를 상속받은 `MemberService`의
 `loadUserByUsername`를 구현합니다.
 ```java
 public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -220,7 +220,7 @@ public UserDetails loadUserByUsername(String email) throws UsernameNotFoundExcep
     }
 ```
 
-먼저 `filter`를 구현하기 전에 `jwt`를 생성할 클래스와 `loginDto` 그리고 
+다음 `filter`를 구현하기 전에 `jwt`를 생성할 클래스와 `loginDto` 그리고 
 `UserDetails`를 구현하겠습니다.
 
 >**이미 `Member`라는 유저 객체가 있는데 `UserDetails`는 뭔가요?**
@@ -363,7 +363,77 @@ token = JWT.create()
 * `withIssuer`와 `withClaim`은 `Payload`에 기록됩니다.
 
 <br>
-기본적으로 filter를 구성하기 위한 작업을 마쳤습니다.
+
+기본적으로 `filter`를 구성하기 위한 작업을 마쳤습니다.
+
+다음으로 마지막 단계인 `filter`를 구현하겠습니다.
+
+**LoginProcessingFilter**
+```java
+//1. AbstractAuthenticationProcessingFilter를 상속하는 클래스를 하나 만듭니다.
+public class LoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
+
+
+    private final JwtFactory jwtFactory;
+
+    private final ObjectMapper objectMapper;
+
+
+    //2. JwtFactory와 ObjectMapper를 DI합니다.
+    public LoginProcessingFilter(String defaultFilterProcessesUrl, AuthenticationManager manager,JwtFactory jwtFactory,ObjectMapper objectMapper) {
+        super(defaultFilterProcessesUrl);
+        setAuthenticationManager(manager);
+        this.jwtFactory = jwtFactory;
+        this.objectMapper = objectMapper;
+
+    }
+
+    //3. attemptAuthentication를 통해 인증을 진행합니다.
+    @Override
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException, IOException, ServletException {
+
+        LoginMemberDto loginMemberDto = new ObjectMapper().readValue(request.getReader(), LoginMemberDto.class);
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(loginMemberDto.getEmail(),loginMemberDto.getPassword(), Collections.emptyList());
+
+        return this.getAuthenticationManager().authenticate(token);
+    }
+
+    //4. 인증 성공
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
+
+        UsernamePasswordAuthenticationToken postToken = (UsernamePasswordAuthenticationToken) authResult;
+
+        SecurityMember securityMember = (SecurityMember) postToken.getPrincipal();
+
+        String token = jwtFactory.generateToken(securityMember.getUsername());
+
+        TokenDto tokenDto = new TokenDto(token);
+
+        //http header 설정
+        response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+        response.setStatus(HttpStatus.OK.value());
+        response.getWriter().write(objectMapper.writeValueAsString(tokenDto));
+        
+
+    }
+
+    //인증 실패
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
+        super.unsuccessfulAuthentication(request, response, failed);
+        logger.info("실패");
+    }
+}
+
+```
+
+1. `AbstractAuthenticationProcessingFilter`를 상속하는 클래스를 하나 만듭니다.
+2. `JwtFactory`와 `ObjectMapper`를 `DI`합니다.
+3. 실제 `attemptAuthentication`메소드에서 회원 인증이 진행됩니다.
+4. 인증에 성공하면 `successfulAuthentication`가 호출됩니다.
+5. 인증에 실패하면 `unsuccessfulAuthentication`가 호출됩니다.
 
 
 
