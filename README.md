@@ -419,7 +419,7 @@ public class LoginProcessingFilter extends AbstractAuthenticationProcessingFilte
 
     }
 
-    //인증 실패
+    //5. 인증 실패
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
         super.unsuccessfulAuthentication(request, response, failed);
