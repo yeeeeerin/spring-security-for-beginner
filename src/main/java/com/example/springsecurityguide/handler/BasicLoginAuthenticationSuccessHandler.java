@@ -28,7 +28,7 @@ public class BasicLoginAuthenticationSuccessHandler implements AuthenticationSuc
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        SecurityMember securityMember = (SecurityMember) authentication;
+        SecurityMember securityMember = (SecurityMember) authentication.getPrincipal();
 
         String token = jwtFactory.generateToken(securityMember);
 
