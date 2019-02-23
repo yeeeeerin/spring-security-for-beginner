@@ -1,4 +1,4 @@
-# SpringSecurity가 궁금한 히치하이커를 위한 안내서
+# SpringSecurity가 궁금한 히치하이커를 위한 안내서(제작중)
 <초보자도(가) 이해하는 SpringSecurity guide>
 
 스프링시큐리티를 처음 공부하시는 여러분을 위한 초보자 가이드 입니다.
@@ -122,7 +122,7 @@ public class MemberService implements UserDetailsService {
 }
 ```
 
-회원정보를 DB에 넣을 때, 비밀번호를 암호화 하기위해 `SecurityConfig`파일을 작성 후
+회원정보를 `DB`에 넣을 때, 비밀번호를 암호화 하기위해 `SecurityConfig`파일을 작성 후
 `PasswordEncoder`를 빈으로 설정하겠습니다.
 
 `SecurityConfig`에서는 비밀번호 암호화 이외에도 여러 `security`관련 설정을 지원힙니다.
@@ -164,11 +164,10 @@ public @interface EnableWebSecurity {
 }
 ```
 `EnableWebSecurity`의 구현을 보면 `WebSecurityConfiguration`가 `import`되어있을음 알 수 있습니다.
-<br></br>
 
-저는 추가적으로 h2 DB에 접근하기 위한 설정을 `SecurityConfig`에 추가적으로 넣어줬습니다.
+저는 추가적으로 `h2 DB`에 접근하기 위한 설정을 `SecurityConfig`에 추가적으로 넣어줬습니다.
 
-`HttpSecurity`는 http 요청에 대해 웹기반 보안기능을 구성할 수 있습니다.
+`HttpSecurity`는 `http`요청에 대해 웹기반 보안기능을 구성할 수 있습니다.
 ```java
 @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -223,7 +222,7 @@ public class AuthController {
 
 </br>
 
-먼저 filter와 provider를 구현하기 전에 몇가지 작업을 해야합니다.
+먼저 `filter`와 `provider`를 구현하기 전에 몇가지 작업을 해야합니다.
 
 **LoginMemberDto**
 ```java
@@ -233,7 +232,7 @@ public class LoginMemberDto {
     String password;
 }
 ```
-단순한 email과 password를 받는 dto입니다.
+단순한 `email`과 `password`를 받는 `dto`입니다.
 
 **SecurityMember**
 ```java
@@ -466,7 +465,6 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 `AuthenticationProvider`를 상속받으면 `authenticate`와 `supports`메소드를 구현해야합니다.
 * `authenticate`에서 `userdetailservice`의 `loadUserByUsername(String username)`으로부터
 유저정보를 가져와 올바른 인증을 하게됩니다.
-
 * `supports`는 이 `AuthenticationProvider`가 표시된 `Authentication`객체를 지원하는 경우 `true`를 반환합니다. 
 
 이제 정말 **마지막**으로 `SecurityConfig`에 등록하면 됩니다. 
