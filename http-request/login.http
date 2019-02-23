@@ -1,6 +1,9 @@
 POST http://localhost:8080/login
 Content-Type: application/json
 
-{"userId": "yerin","password": "yerin"}
+{
+  "email": "yerin@yerin.com",
+  "password": "1234"
+}
 
 ###
