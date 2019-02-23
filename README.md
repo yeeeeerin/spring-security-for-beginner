@@ -8,7 +8,7 @@
 * [step3 - 로그인](#step3)
 
 <br></br>
-❗[必부록]
+**❗[必부록]** 
 
 * [step3-참고 JWT란](#att)
 
@@ -212,7 +212,7 @@ public class AuthController {
 1. 요청이 들어오면 `AbstractAuthenticationProcessingFilter`에 들어가게 됩니다.
 2. 그 다음 `filter`의 `attemptAuthenticationg`메소드를 통해 유저의
 정보가 담긴 `Authentication`객체(인증 전)를 `AuthenticationManager`에 전달합니다.
-    1. `Authentication`객체는 `UsernamePasswordAuthenticationToken`을 통해
+    * `Authentication`객체는 `UsernamePasswordAuthenticationToken`을 통해
     만듭니다.
 3. 내부적으로 `Spring Security`의 `ProviderManager`를 통해 적잘한 
 `AuthenticationProvider`를 찾습니다.
@@ -367,7 +367,7 @@ public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessing
 ```
 우리는 필터의 생성자의 파라미터로 `url`을 받습니다.
 `url`을 받는 2가지 방법이 있는데 하나는 위의 예제와 같이 `String`으로 받는
-방법이 있고 또하나는 RequestMatcher로 받는 방법입니다.
+방법이 있고 또하나는 `RequestMatcher`로 받는 방법입니다.
 >`RequestMatcher`로 받는 경우 `RequestMatcher interface`를 구현하여
 `RequestMatcher`에서 미리 정의한 `Request pattern`들로 요청을 판별합니다.
 
@@ -464,11 +464,10 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 }
 ```
 `AuthenticationProvider`를 상속받으면 `authenticate`와 `supports`메소드를 구현해야합니다.
-
-`authenticate`에서 `userdetailservice`의 `loadUserByUsername(String username)`으로부터
+* `authenticate`에서 `userdetailservice`의 `loadUserByUsername(String username)`으로부터
 유저정보를 가져와 올바른 인증을 하게됩니다.
 
-`supports`는 이 `AuthenticationProvider`가 표시된 `Authentication`객체를 지원하는 경우 `true`를 반환합니다. 
+* `supports`는 이 `AuthenticationProvider`가 표시된 `Authentication`객체를 지원하는 경우 `true`를 반환합니다. 
 
 이제 정말 **마지막**으로 `SecurityConfig`에 등록하면 됩니다. 
 
