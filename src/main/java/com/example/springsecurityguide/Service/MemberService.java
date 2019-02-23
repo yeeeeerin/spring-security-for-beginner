@@ -38,11 +38,10 @@ public class MemberService implements UserDetailsService {
     //todo 로그인 시 사용
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Member member = memberRepository.findByEmail(email).get();
+        Member member = memberRepository.
+                findByEmail(email).
+                orElseThrow(() -> new UsernameNotFoundException("Have no registered members"));
 
-        if(member == null){
-            throw new UsernameNotFoundException("회원이 없습니다.");
-        }
         return SecurityMember.getMemberDetails(member);
     }
 

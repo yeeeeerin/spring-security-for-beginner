@@ -211,11 +211,10 @@ bad version에서 로그인 요청이 들어왔을 때 절차는
 `loadUserByUsername`를 구현합니다.
 ```java
 public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Member member = memberRepository.findByEmail(email).get();
-
-        if(member == null){
-            throw new UsernameNotFoundException("회원이 없습니다.");
-        }
+        Member member = memberRepository.
+                        findByEmail(email).
+                        orElseThrow(() -> new UsernameNotFoundException("Have no registered members"));
+                
         return SecurityMember.getMemberDetails(member);
     }
 ```
