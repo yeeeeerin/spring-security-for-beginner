@@ -27,9 +27,6 @@ public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessing
     @Autowired
     BasicLoginAuthenticationFailureHandler failureHandler;
 
-    /*
-    * todo urlmatcher랑 string 두개의 형식으로 생성자 생성하는거 설명하기
-    * */
     public BasicLoginProcessingFilter(String defaultFilterProcessesUrl) {
         super(defaultFilterProcessesUrl);
     }

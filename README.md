@@ -201,6 +201,8 @@ public class AuthController {
 }
 ```
 
+<br></br>
+
 <h2 id="step3">step3 - 로그인</h2>
 
 로그인이 성공하면 `JWT token`을 부여하는 방식으로 진행하겠습니다.
@@ -320,8 +322,12 @@ public class JwtFactory {
 ```
 `JWT token`생성을 위해 `JwtFactory`를 만들어줍니다.
 
-드디어 기본적인 작업이 끝났습니다.👏👏 다음으로는 요청이 들어오는 처음단계인 
-`AbstractAuthenticationProcessingFilter`를 구현하겠습니다.
+드디어 기본적인 작업이 끝났습니다.👏👏 
+
+다음으로는 요청이 들어오는 처음단계인 `AbstractAuthenticationProcessingFilter`를 구현하겠습니다.
+
+>`provider`는 `filter`와 `success,failure handler` 사이에서 동작하지만
+`filter`구현에 있어서 마지막으로 `provider`를 작성하도록 하겠습니다.
 
 **BasicLoginProcessingFilter**
 ```java
@@ -333,9 +339,6 @@ public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessing
     @Autowired
     BasicLoginAuthenticationFailureHandler failureHandler;
 
-    /*
-    * todo urlmatcher랑 string 두개의 형식으로 생성자 생성하는거 설명하기
-    * */
     public BasicLoginProcessingFilter(String defaultFilterProcessesUrl) {
         super(defaultFilterProcessesUrl);
     }
@@ -362,6 +365,21 @@ public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessing
     }
 }
 ```
+우리는 필터의 생성자의 파라미터로 `url`을 받습니다.
+`url`을 받는 2가지 방법이 있는데 하나는 위의 예제와 같이 `String`으로 받는
+방법이 있고 또하나는 RequestMatcher로 받는 방법입니다.
+>`RequestMatcher`로 받는 경우 `RequestMatcher interface`를 구현하여
+`RequestMatcher`에서 미리 정의한 `Request pattern`들로 요청을 판별합니다.
+
+요청이 들어왔다면 `attemptAuthenticationg`메소드를 통해 유저의
+정보가 담긴 `Authentication`객체(인증 전)를 
+`AuthenticationManager`에 전달합니다.(인증절차 2번의 내용)
+
+여기서 사용하는 `UsernamePasswordAuthenticationToken`으로 `Authentication`객체를
+만드는데 `UsernamePasswordAuthenticationToken`의 어떤생성자를 부르느냐에 따라
+인증 전 `Authentication`를 만드는지 인증 후 `Authentication`을 만드는지 결정합니다.
+
+
 **BasicLoginAuthenticationSuccessHandler**
 ```java
 @Component
@@ -374,27 +392,24 @@ public class BasicLoginAuthenticationSuccessHandler implements AuthenticationSuc
 
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {      
         SecurityMember securityMember = (SecurityMember) authentication.getPrincipal();
-
         String token = jwtFactory.generateToken(securityMember);
-
         TokenDto tokenDto = new TokenDto(token);
 
         makeResponse(response,tokenDto);
-
     }
 
     private void makeResponse(HttpServletResponse response, TokenDto tokenDto) throws IOException {
-
         response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
         response.setStatus(HttpStatus.OK.value());
         response.getWriter().write(objectMapper.writeValueAsString(tokenDto));
-        //objectMapper.writeValue(response.getWriter(), tokenDto);
-
     }
 }
 ```
+인증에 성공했다면 `AuthenticationSuccessHandler`를 통해 토큰값을 주고 맞는 
+`response`값을 채워줍니다.
+
 **BasicLoginAuthenticationFailureHandler**
 ```java
 @Component
@@ -406,18 +421,124 @@ public class BasicLoginAuthenticationFailureHandler implements AuthenticationFai
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
                                         AuthenticationException exception) throws IOException, ServletException {
-
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.getWriter().write(exception.getMessage());
-
     }
 }
 ```
 
+인증에 실패했다면 `AuthenticationFailureHandler`를 통해 실패했다는 `response`값을
+채워줍니다.
 
+이제 마지막으로 `provider`를 만들어 주겠습니다.
 
+```java
+@Component
+public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
+    @Autowired
+    MemberService memberService;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        String email = (String) authentication.getPrincipal();
+        String password = (String) authentication.getCredentials();
+
+        SecurityMember member = (SecurityMember) memberService.loadUserByUsername(email);
+
+        if (!passwordEncoder.matches(password, member.getPassword())) {
+            throw new BadCredentialsException("password is incorrect");
+        }
+
+        return new UsernamePasswordAuthenticationToken(member, password, member.getAuthorities());
+    }
+
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+    }
+}
+```
+`AuthenticationProvider`를 상속받으면 `authenticate`와 `supports`메소드를 구현해야합니다.
+
+`authenticate`에서 `userdetailservice`의 `loadUserByUsername(String username)`으로부터
+유저정보를 가져와 올바른 인증을 하게됩니다.
+
+`supports`는 이 `AuthenticationProvider`가 표시된 `Authentication`객체를 지원하는 경우 `true`를 반환합니다. 
+
+이제 정말 **마지막**으로 `SecurityConfig`에 등록하면 됩니다. 
+
+**SecurityConfig**
+```java
+@Configuration
+@EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    //1.BasicLoginSecurityProvider 주입 받기
+    @Autowired
+    BasicLoginSecurityProvider basicLoginSecurityProvider;
+
+    @Bean
+    public PasswordEncoder getPasswordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+
+        http
+                .headers().frameOptions().disable();
+        http
+                .csrf().disable();
+        http
+                .authorizeRequests()
+                .antMatchers("/h2-console/**").permitAll();
+    }
+
+    //2.filter를 등록하기
+    @Bean
+    protected BasicLoginProcessingFilter basicLoginProcessingFilter() throws Exception {
+        BasicLoginProcessingFilter filter = new BasicLoginProcessingFilter("/login");
+        filter.setAuthenticationManager(super.authenticationManagerBean());
+        return filter;
+    }
+    //3. provider 등록하기
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) {
+        auth
+                .authenticationProvider(this.basicLoginSecurityProvider);
+    }
+    
+}
+```
+먼저 `filter`를 `AuthenticationManager`를 통해 등록을 합니다.
+
+그리고 `provider`를 주입받고 `AuthenticationManagerBuilder`를 통해
+`provider`를 등록합니다.
+
+성공했다면 이러한 결과값을
+```json
+{
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJ5ZXJpbiIsIkVNQUlMIjoieWVyaW5AeWVyaW4uY29tIn0.G2W_yQ7FQzmT8h6r7rOLHd_IBuW4fGV8SkfYr-6QKtc"
+}
+Response code: 200; Time: 601ms; Content length: 148 bytes
+```
+
+실패했다면 이러한 결과값을 볼 수 있습니다.
+```json
+//비밀번호 틀렸을 시
+password is incorrect
+
+//회원이 등록되어있지 않았을 시
+Have no registered members
+
+Response code: 401; Time: 114ms; Content length: 21 bytes
+```
 <br></br>
 <br></br>
 <h1 id="att">❗必부록 </h1>
@@ -430,21 +551,13 @@ public class BasicLoginAuthenticationFailureHandler implements AuthenticationFai
 우리는 올바른 정보를 보내온 회원에게 토큰을 부여하고 추가적인 `api`를 이용할 때 
 별다른 로그인 없이 토큰을 통해서 권한을 확인할 수 있습니다.
 
-
-
 그러면 `JWT`토큰으로 어떻게 권한을 확인할 수 있을까?
-
-
 
 `JWT`의 기본 구조는
 
 * `Header`
-
 * `Payload`
-
 * `Signature`
-
-
 
 이렇게 3 부분으로 나뉩니다. 이 3 부분은 `.`으로 구분하여 아래와 같은 형식으로
 나타납니다.
