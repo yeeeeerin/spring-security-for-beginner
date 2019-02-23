@@ -1,4 +1,4 @@
-# SpringSecurity가 궁금한 히치하이커를 위한 안내서
+# SpringSecurity가 궁금한 히치하이커를 위한 안내서(제작중)
 <초보자도(가) 이해하는 SpringSecurity guide>
 
 스프링시큐리티를 처음 공부하시는 여러분을 위한 초보자 가이드 입니다.
