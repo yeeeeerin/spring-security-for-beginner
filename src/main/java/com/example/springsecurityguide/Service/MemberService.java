@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Service
 @Slf4j
 public class MemberService implements UserDetailsService {
@@ -37,11 +39,10 @@ public class MemberService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Member member = memberRepository.findByEmail(email).get();
+        Member member = memberRepository.
+                findByEmail(email).
+                orElseThrow(() -> new UsernameNotFoundException("Have no registered members"));
 
-        if(member == null){
-            throw new UsernameNotFoundException("회원이 없습니다.");
-        }
         return SecurityMember.getMemberDetails(member);
     }
 

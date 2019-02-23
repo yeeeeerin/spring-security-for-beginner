@@ -28,11 +28,8 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
         SecurityMember member = (SecurityMember) memberService.loadUserByUsername(email);
 
-        if (member == null) {
-            throw new BadCredentialsException("회원이 등록되어 있지 않습니다.");
-        }
         if (!passwordEncoder.matches(password, member.getPassword())) {
-            throw new BadCredentialsException("비밀번호가 옳지 않습니다.");
+            throw new BadCredentialsException("password is incorrect");
         }
 
         return new UsernamePasswordAuthenticationToken(member, password, member.getAuthorities());
