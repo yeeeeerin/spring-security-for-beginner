@@ -5,6 +5,14 @@
 
 * [step1 - 유저 모델링](#step1) 
 * [step2 - 회원가입 ](#step2)
+* [step3 - 로그인](#step3)
+
+<br></br>
+
+❗[必부록]
+
+* [step3-참고 JWT란](#att)
+
 
 <h2 id="step1">step1 - 유저 모델링 </h2>
 
@@ -141,7 +149,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 * `@EnableGlobalMethodSecurity(prePostEnabled = true)`은 추 후에 
 `@PreAuthorize` 를 이용하기 위함입니다.
 
-🔓🔓 **@EnableWebSecurity** 
+🔐 **@EnableWebSecurity** 
 
 ```java
 @Retention(value = java.lang.annotation.RetentionPolicy.RUNTIME)
@@ -177,6 +185,7 @@ public @interface EnableWebSecurity {
 ```
 <br></br>
 마지막으로 `controller`를 작성하겠습니다. 
+
 **AuthController**
 ```java
 @RestController
@@ -193,8 +202,120 @@ public class AuthController {
 }
 ```
 
+<h2 id="step3">step3 - 로그인</h2>
+
+로그인이 성공하면 `JWT token`을 부여하는 방식으로 진행하겠습니다.
+
+아래는 `login` 요청이 들어왔을 때의 절차 입니다.
+
+1. 요청이 들어오면 `AbstractAuthenticationProcessingFilter`를
+ 상속받은`BasicLoginProcessingFilter`에 들어가게 됩니다.
+2. 그 다음 `filter`의 `attemptAuthenticationg`메소드를 통해 유저의
+정보가 담긴 `Authentication`객체(인증 전)를 `AuthenticationManager`에 전달합니다.
+    1. `Authentication`객체는 `UsernamePasswordAuthenticationToken`을 통해
+    만듭니다.
+3. `Spring Security`의 `ProviderManager`를 통해 적잘한 
+`AuthenticationProvider`를 찾습니다.
+4. `AuthenticationProvider`의 `authenticate`메소드로 인증을 진행합니다.
+5. 인증에 성공했다면 성공한 `Authentication`객체(인증 후)를 `filter`에 다시 반환해 
+`authenticationSuccessHandler`를 수행합니다.
+6. `authenticationSuccessHandler`를 통해 `jwt token`을 발급하고 `response`를 채워줍니다.
 
 
- 
+<h1 id="att">❗必부록 </h1>
+
+모른다면 필수로 봐야하는 부록
+
+<h2 id="step3-att">step3-참고 JWT란</h2>
+
+`JWT`란 `Json Web Token`의 약자로 말 그래도 `json`으로 제공하는 토큰입니다.
+우리는 올바른 정보를 보내온 회원에게 토큰을 부여하고 추가적인 `api`를 이용할 때 
+별다른 로그인 없이 토큰을 통해서 권한을 확인할 수 있습니다.
 
 
+
+그러면 `JWT`토큰으로 어떻게 권한을 확인할 수 있을까?
+
+
+
+`JWT`의 기본 구조는
+
+* `Header`
+
+* `Payload`
+
+* `Signature`
+
+
+
+이렇게 3 부분으로 나뉩니다. 이 3 부분은 `.`으로 구분하여 아래와 같은 형식으로
+나타납니다.
+
+`aaaaaaa.bbbbbbb.zzzzzzz` 
+
+`JWT`를 조금 더 살펴보겠습니다.
+
+>Header
+
+```json
+
+{
+
+  "alg": "HS256",
+
+  "typ": "JWT"
+
+}
+
+```
+
+`Header`에는 암호화 알고리즘(`alg`)과 토큰의 타입(`typ`)으로 구성되어있습니다.
+
+>Payload
+
+```json
+
+{
+
+  "sub": "1234567890",
+
+  "name": "John Doe",
+
+  "admin": true
+
+}
+
+```
+
+`Payload`은 `clame`으로 구성되어 있습니다. 여기에 유저의 정보를 담습니다.
+주의해야할 점은 개인의 민감한 정보를 `clame`에 담지 않는것 입니다. 
+
+`JWT`토큰은 알고리즘만 알고있다면 해석이 가능함으로 개인정보 유출의 위험이 있습니다.
+
+>Signature
+
+`Signature`은 `Header`,`Payload`값을 인코딩하고 `secret`값으로
+해쉬한 암호화 값입니다.
+
+우리가 작성한 코드로 `JWT`를 어떻게 구성하는지 살펴보겠습니다.
+
+```java
+
+String SECRET = "TheSecret";
+
+
+
+token = JWT.create()
+
+​                .withIssuer("yerin")
+
+​                .withClaim("EMAIL", email)
+
+​                .sign(Algorithm.HMAC256(SECRET));
+
+```
+
+* `SECRET`은 `Signature` 부분에서 `secret`값으로 사용됩니다.
+* `withIssuer`와 `withClaim`은 `Payload`에 기록됩니다. 
+
+이렇게 구성된 `JWT`토큰을 디코딩하여 그 정보를 인증합니다.
