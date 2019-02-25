@@ -1,0 +1,4 @@
+GET http://localhost:8080/only_admin
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJST0xFIjoiUk9MRV9VU0VSIiwiaXNzIjoieWVyaW4iLCJFTUFJTCI6InllcmluQHllcmluLmNvbSJ9.Wy57k8utcpskS7XQMPKGFJcwh16pwb0A2fQLrMsnJc0
+
+###

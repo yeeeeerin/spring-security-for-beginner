@@ -47,7 +47,6 @@ public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFi
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
         this.successHandler.onAuthenticationSuccess(request, response, authResult);
-        chain.doFilter(request, response);
     }
 
     @Override
