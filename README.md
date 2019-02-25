@@ -293,30 +293,52 @@ public UserDetails loadUserByUsername(String email) throws UsernameNotFoundExcep
 }
 ```
 
+**JwtSettings**
+```java
+@Getter
+@Setter
+@Component
+@ConfigurationProperties(prefix = "jwt", ignoreInvalidFields = true)
+public class JwtSettings {
+
+    private String tokenIssuer;
+    private String tokenSigningKey;
+
+}
+```
+`application.properties`의 `jwt.`으로 시작하는 값들을 가져와 각 변수에 `setting`해줍니다.
+
+>`application.properties` 설정
+>```
+>jwt.tokenIssuer=yerin
+>jwt.tokenSigningKey=abcdefg
+>```
+
 **JwtFactory**
 ```java
 @Slf4j
 @Component
 public class JwtFactory {
 
-    private static String SECRET = "TheSecret";
-
-    /*
-     * 유저의 권한정보로 토큰을 만듬(claim에는 여러 정보가 올 수 있다.)
-     * */
-    public String generateToken(SecurityMember securityMember) {
-        String token;
-
-        token = JWT.create()
-                .withIssuer("yerin")
-                .withClaim("EMAIL", securityMember.getUsername())
-                .sign(Algorithm.HMAC256(SECRET));
-
-        log.info("token -- "+token);
-
-        return token;
-
-    }
+    @Autowired
+        JwtSettings jwtSettings;
+    
+        /*
+         * 유저의 권한정보로 토큰을 만듬(claim에는 여러 정보가 올 수 있다.)
+         * */
+        public String generateToken(SecurityMember securityMember) {
+            String token;
+    
+            token = JWT.create()
+                    .withIssuer(jwtSettings.getTokenIssuer())
+                    .withClaim("EMAIL", securityMember.getUsername())
+                    .sign(Algorithm.HMAC256(jwtSettings.getTokenSigningKey()));
+    
+            log.info("token -- "+token);
+    
+            return token;
+    
+        }
 
 }
 ```
