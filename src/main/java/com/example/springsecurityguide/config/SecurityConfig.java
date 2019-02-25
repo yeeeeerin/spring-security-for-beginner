@@ -1,7 +1,10 @@
 package com.example.springsecurityguide.config;
 
 import com.example.springsecurityguide.filter.BasicLoginProcessingFilter;
+import com.example.springsecurityguide.filter.JwtLoginProcessingFilter;
 import com.example.springsecurityguide.provider.BasicLoginSecurityProvider;
+import com.example.springsecurityguide.provider.JwtAuthenticationProvider;
+import com.example.springsecurityguide.utils.FilterSkipPathMatcher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +16,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Arrays;
+
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
@@ -20,6 +25,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     BasicLoginSecurityProvider basicLoginSecurityProvider;
+
+    @Autowired
+    JwtAuthenticationProvider jwtAuthenticationProvider;
 
     @Bean
     public PasswordEncoder getPasswordEncoder() {
@@ -45,10 +53,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return filter;
     }
 
+    @Bean
+    protected JwtLoginProcessingFilter jwtLoginProcessingFilter() throws Exception{
+        FilterSkipPathMatcher matchar = new FilterSkipPathMatcher(Arrays.asList("/login"), "/only_user");
+        JwtLoginProcessingFilter filter = new JwtLoginProcessingFilter(matchar);
+        filter.setAuthenticationManager(super.authenticationManagerBean());
+        return filter;
+    }
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth
-                .authenticationProvider(this.basicLoginSecurityProvider);
+                .authenticationProvider(this.basicLoginSecurityProvider)
+                .authenticationProvider(this.jwtAuthenticationProvider);
     }
 
 
