@@ -252,6 +252,10 @@ public class SecurityMember extends User {
                 .map(r -> new SimpleGrantedAuthority(r.getRoleName()))
                 .collect(Collectors.toList());
     }
+    
+    public String getRole(){
+            return getAuthorities().stream().findFirst().get().getAuthority();
+    }
 }
 ```
 회원정보를 가지고 있는 인증객체인 `userdetails`를 구현해야합니다.
@@ -331,6 +335,7 @@ public class JwtFactory {
             token = JWT.create()
                     .withIssuer(jwtSettings.getTokenIssuer())
                     .withClaim("EMAIL", securityMember.getUsername())
+                    .withClaim("ROLE",securityMember.getRole())
                     .sign(Algorithm.HMAC256(jwtSettings.getTokenSigningKey()));
     
             log.info("token -- "+token);

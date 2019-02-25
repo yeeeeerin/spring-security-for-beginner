@@ -24,6 +24,7 @@ public class JwtFactory {
         token = JWT.create()
                 .withIssuer(jwtSettings.getTokenIssuer())
                 .withClaim("EMAIL", securityMember.getUsername())
+                .withClaim("ROLE",securityMember.getRole())
                 .sign(Algorithm.HMAC256(jwtSettings.getTokenSigningKey()));
 
         log.info("token -- "+token);
