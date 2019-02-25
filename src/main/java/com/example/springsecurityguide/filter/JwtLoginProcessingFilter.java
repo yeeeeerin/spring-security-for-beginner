@@ -1,6 +1,8 @@
 package com.example.springsecurityguide.filter;
 
 import com.example.springsecurityguide.dto.TokenDto;
+import com.example.springsecurityguide.handler.JwtLoginAuthenticationFailureHandler;
+import com.example.springsecurityguide.handler.JwtLoginAuthenticationSuccessHandler;
 import com.example.springsecurityguide.utils.JwtTokenExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +23,12 @@ public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFi
     @Autowired
     JwtTokenExtractor tokenExtractor;
 
+    @Autowired
+    JwtLoginAuthenticationFailureHandler failureHandler;
+
+    @Autowired
+    JwtLoginAuthenticationSuccessHandler successHandler;
+
     public JwtLoginProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher) {
         super(requiresAuthenticationRequestMatcher);
     }
@@ -38,11 +46,12 @@ public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFi
 
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
-        super.successfulAuthentication(request, response, chain, authResult);
+        this.successHandler.onAuthenticationSuccess(request, response, authResult);
+        chain.doFilter(request, response);
     }
 
     @Override
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
-        super.unsuccessfulAuthentication(request, response, failed);
+        this.failureHandler.onAuthenticationFailure(request, response, failed);
     }
 }
