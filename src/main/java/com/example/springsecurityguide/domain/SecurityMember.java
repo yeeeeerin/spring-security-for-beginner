@@ -28,6 +28,7 @@ public class SecurityMember extends User {
                 .collect(Collectors.toList());
     }
 
+
     public static List<SimpleGrantedAuthority> parseAuthorities(String role) {
 
         MemberRole memberRole = Arrays.stream(MemberRole.values())
@@ -41,4 +42,5 @@ public class SecurityMember extends User {
     public String getRole(){
         return getAuthorities().stream().findFirst().get().getAuthority();
     }
+
 }
