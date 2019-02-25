@@ -26,4 +26,9 @@ public class SecurityMember extends User {
                 .map(r -> new SimpleGrantedAuthority(r.getRoleName()))
                 .collect(Collectors.toList());
     }
+
+    public String getRole(){
+        return getAuthorities().stream().findFirst().get().getAuthority();
+    }
+
 }
