@@ -262,7 +262,7 @@ public class SecurityMember extends User {
 <--는 `javadoc`에서 발최한 부분으로 더욱 직관적으로 설명하자면 
 로그인할 때 필요한 `UserDetailsService`의 `loadUserByUsername`함수를 
 보시면 반환값이 `UserDetails`인 것을 볼 수 있습니다. 
-이렇듯 springsecurity 에서는 하나의 규격화된 `UserDetails`인터페이스를 
+이렇듯 `springsecurity` 에서는 하나의 규격화된 `UserDetails`인터페이스를 
 상속 받은 클래스를 사용자로 인식하고 인증합니다. 
 
 `User`는 `org.springframework.security.core.userdetails.User`으로 
