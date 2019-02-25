@@ -6,6 +6,7 @@
 * [step1 - 유저 모델링](#step1) 
 * [step2 - 회원가입 ](#step2)
 * [step3 - 로그인](#step3)
+* [step4 - 발급받은 jwt으로 인증](#step4)
 
 <br></br>
 **❗[必부록]** 
@@ -563,6 +564,26 @@ Have no registered members
 
 Response code: 401; Time: 114ms; Content length: 21 bytes
 ```
+
+<br></br>
+
+<h2 id="step4">step4 - 발급받은 jwt으로 로그인</h2>
+step3에서 발급받은 jwt token으로 인증을 시도해보겠습니다.
+
+절차는 로그인과 비슷함으로 내부적인 동작은 생략한 절차입니다.
+
+1. 요청이 들어오면 `AbstractAuthenticationProcessingFilter`에 들어가게 됩니다.
+2. 그 다음 `filter`의 `attemptAuthenticationg`메소드를 통해 `header`에 있는 
+`token`값을 분리해 가져와 `Authentication`객체(인증 전)에 담고 `manager`에 전달합니다.
+3. `AuthenticationProvider`의 `authenticate`메소드로 `token`에 담겨있는
+인증정보를 확인하여 인증을 진행합니다.
+4. 인증에 성공했다면 `authenticationSuccessHandler`를 통해 `SecurityContext`를 
+생성하고 `SecurityContextHolder`에 보관합니다.
+
+
+
+
+
 <br></br>
 <br></br>
 <h1 id="att">❗必부록 </h1>
