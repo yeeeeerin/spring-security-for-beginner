@@ -30,6 +30,6 @@ public class AuthController {
     @GetMapping("/only_admin")
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     public String onlyAdmin(){
-        return "hi user";
+        return "hi admin";
     }
 }

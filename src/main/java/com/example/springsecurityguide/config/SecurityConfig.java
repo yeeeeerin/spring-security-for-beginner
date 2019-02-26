@@ -55,7 +55,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     protected JwtLoginProcessingFilter jwtLoginProcessingFilter() throws Exception{
-        FilterSkipPathMatcher matchar = new FilterSkipPathMatcher(Arrays.asList("/login"), "/only_user");
+        FilterSkipPathMatcher matchar = new FilterSkipPathMatcher(Arrays.asList("/login","/signUp"), "/**");
         JwtLoginProcessingFilter filter = new JwtLoginProcessingFilter(matchar);
         filter.setAuthenticationManager(super.authenticationManagerBean());
         return filter;

@@ -349,6 +349,7 @@ public class JwtFactory {
 ```
 `JWT token`생성을 위해 `JwtFactory`를 만들어줍니다.
 
+
 드디어 기본적인 작업이 끝났습니다.👏👏 
 
 다음으로는 요청이 들어오는 처음단계인 `AbstractAuthenticationProcessingFilter`를 구현하겠습니다.
@@ -580,9 +581,96 @@ step3에서 발급받은 jwt token으로 인증을 시도해보겠습니다.
 4. 인증에 성공했다면 `authenticationSuccessHandler`를 통해 `SecurityContext`를 
 생성하고 `SecurityContextHolder`에 보관합니다.
 
+이번 step에도 filter를 구현하기 전에 몇가지 사전 작업을 진행하겠습니다.
 
+**FilterSkipMatcher**
+```java
+public class FilterSkipPathMatcher implements RequestMatcher {
 
+    private OrRequestMatcher orRequestMatcher;
+    private RequestMatcher requestMatcher;
 
+    public FilterSkipPathMatcher(List<String> pathsToSkip, String processingPath) {
+
+        //건너띌 주소 묶음
+        this.orRequestMatcher = new OrRequestMatcher(
+                pathsToSkip.stream()
+                        .map(AntPathRequestMatcher::new)
+                        .collect(Collectors.toList())
+        );
+
+        //인증을 진행할 주소
+        this.requestMatcher = new AntPathRequestMatcher(processingPath);
+    }
+
+    @Override
+    public boolean matches(HttpServletRequest request) {
+        return !orRequestMatcher.matches(request) && requestMatcher.matches(request);
+    }
+}
+```
+`spring security`는 모든 요청에 대해 `manager`에 등록된 모든 필터를 돌게됩니다.
+그런데 우리는 `jwt token`을 이용하여 게시물 정보를 얻는다던가 유저의 프로필 정보를 얻는다던가
+하는 여러 `api`을 사용해야합니다. 유저의 `email,password`로 로그인을 할 때는 
+`filter`에 `"/login"`이라는 요청하나만 적용하면 되서 생성자를 통해 `string` 타입으로 요청을 받고
+그 요청에만 `filter`를 적용할 수 있게 해주었습니다.
+
+그럼 여러 `filter`의 요청을 `"/**"`라고 하게되면 `/login`요청에도 `jwt`인증 `filter`가 돌게 되는데
+`/login`요청에는 아직 `token`이 부여받지 않는 상태라 에러가 나게 됩니다. 이 문제를 해결하기 위해서는 어떻게 해야할까요?
+
+우리는 그 방법으로 step3 `filter`구현 부분에서 잠깐 설명한 `RequestMatcher`를 이용할 것입니다. 
+바로 위의 `FilterSkipMatcher`가 `RequestMatcher`를 이용하여 `filter`를 거치지 않을 `url`을 걸러
+주는 역할을 합니다.
+ 
+`ReqestMatcher`에는 여러 `Request pattern`들이 있습니다. [request pattern 보러가기](https://docs.spring.io/spring-security/site/docs/4.2.10.RELEASE/apidocs/org/springframework/security/web/util/matcher/RequestMatcher.html)
+그 중 우리가 사용하는 `OrRequestMatcher`는 여러 요청을 `List<String>`형식으로 저장할 수 있는 `RequestMatcher`이며
+`AntPathRequestMatcher`는 `"/books/**"`와 같이 `ant pattern`을 저장할 수 있는 `RequestMatcher`입니다.
+
+**JwtTokenExtractor**
+```java
+@Component
+public class JwtTokenExtractor {
+    public static final String HEADER_PREFIX = "Bearer ";
+
+    public String extract(final String header) {
+        if (StringUtils.isEmpty(header)) {
+            throw new AuthenticationServiceException("Authorization header가 없습니다.");
+        }
+
+        if (header.length() < HEADER_PREFIX.length()) {
+            throw new AuthenticationServiceException("authorization header size가 옳지 않습니다.");
+        }
+
+        if (!header.startsWith(HEADER_PREFIX)) {
+            throw new AuthenticationServiceException("올바른 header형식이 아닙니다.");
+        }
+
+        return header.substring(HEADER_PREFIX.length());
+    }
+}
+```
+`jwt token`은 `header`에 `Authorization: Bearer aaa.bbb.ccc`이런식으로 담겨옵니다.
+우리는 `aaa.bbb.ccc`이 부분만 가져올 수 있도록하는 `JwtTokenExtractor`만듭니다.
+여기서는 `header`값이 이상한 값이 들어왔는지 간단한 검사 작업도 진행합니다.
+
+다음으로 `filter`를 구현하기 전에 `successHandler`와 `failureHandler`를 만들어주겠습니다.
+
+**JwtLoginAuthenticationSuccessHandler**
+```java
+@Component
+public class JwtLoginAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
+    @Override
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+
+        response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
+        response.setStatus(HttpStatus.OK.value());
+        response.getWriter().write("인증 성공");
+
+    }
+}
+```
+`successHandler`에서 주의깊게 봐야할 곳은 SecurityContextHolder입니다.
+spring security는 현재 사용자에 대한 Authentication 객체를 구할 때 SecurityContext로부터 가져옵니다.
 
 <br></br>
 <br></br>
