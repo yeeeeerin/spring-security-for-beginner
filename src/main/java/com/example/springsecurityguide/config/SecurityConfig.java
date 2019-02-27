@@ -30,6 +30,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     JwtAuthenticationProvider jwtAuthenticationProvider;
 
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -67,7 +72,5 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticationProvider(this.basicLoginSecurityProvider)
                 .authenticationProvider(this.jwtAuthenticationProvider);
     }
-
-
 
 }

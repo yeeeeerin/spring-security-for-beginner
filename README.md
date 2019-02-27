@@ -12,7 +12,7 @@
 **❗[必부록]** 
 
 * [step3-참고 JWT란](#step3-att)
-* [filter chain에 관하여](#step4-att1)
+* [filter chain에 관하여](#step3-att2)
 
 
 <h2 id="step1">step1 - 유저 모델링 </h2>
@@ -499,16 +499,16 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
 이제 정말 **마지막**으로 `SecurityConfig`에 등록하면 됩니다. 
 
-filter를 등록하기 전에 filter에 관하여 간락하게 설명하겠습니다.
+`filter`를 등록하기 전에 `filter`에 관하여 간락하게 설명하겠습니다.
 
-Spring security는 약 10가지의 필터를 순회하여 알맞은 응답값을 찾습니다.
-이 10가지 필터는 security에서 기존에 정해놓은 filter들로서 만약 우리가 위의
-로그인과같이 filter를 커스텀한다면 spring security의 filterChainProxy에
+`Spring security`는 약 10가지의 필터를 순회하여 알맞은 응답값을 찾습니다.
+이 10가지 필터는 `security`에서 기존에 정해놓은 `filter`들로서 만약 우리가 위의
+로그인과같이 `filter`를 커스텀한다면 `spring security`의 `filterChainProxy`에
 등록을 시켜주어야합니다.
 
 그 방법으로는 두가지 방법이 있습니다.
-1.  기본 tomcat의 필터에 등록하기
-2.  spring sececurity에 등록하기
+1.  기본 `tomcat`의 필터에 등록하기
+2.  `spring sececurity`에 등록하기
 
 🔐** FilterChainProxy 中 **
 ```java
@@ -547,7 +547,7 @@ Spring security는 약 10가지의 필터를 순회하여 알맞은 응답값을
 위의 코드를 보면 `originalChain.doFilter(request, response);` 와
 `nextFilter.doFilter(request, response, this);`를 보실 수 있습니다.
 `originalChain.doFilter(request, response);`은 기본 `tomcat`에 등록된 
-기본적인 `filte`r들이 돌아가고
+기본적인 `filter`들이 돌아가고
 `nextFilter.doFilter(request, response, this);`는 `spring security`에
 사용되는 `filter`들이 돌아갑니다.
 
@@ -555,7 +555,7 @@ Spring security는 약 10가지의 필터를 순회하여 알맞은 응답값을
 `filter`를 `nextFilter`에서 돌아가도록 해주어야합니다. 
 
 그 방법으로는 `configure(HttpSecurity http)`에 
-`addFilterBefore(basicLoginProcessingFilter()`, `UsernamePasswordAuthenticationFilter.class)`
+`addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)`
 를 추가해 주는 것입니다.
 
 **SecurityConfig**
@@ -585,11 +585,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/h2-console/**").permitAll();
         http
+                //2. filter 등록하기
                 .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
-    //2.filter를 등록하기
-    @Bean
+    //2.filter 선언하기
     protected BasicLoginProcessingFilter basicLoginProcessingFilter() throws Exception {
         BasicLoginProcessingFilter filter = new BasicLoginProcessingFilter("/login");
         filter.setAuthenticationManager(super.authenticationManagerBean());
@@ -604,7 +604,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     
 }
 ```
-먼저 `filter`를 `AuthenticationManager`를 통해 등록을 합니다.
 
 그리고 `provider`를 주입받고 `AuthenticationManagerBuilder`를 통해
 `provider`를 등록합니다.
@@ -632,7 +631,7 @@ Response code: 401; Time: 114ms; Content length: 21 bytes
 
 <h2 id="step4">step4 - 발급받은 jwt으로 로그인</h2>
 
-step3에서 발급받은 jwt token으로 인증을 시도해보겠습니다.
+step3에서 발급받은 `jwt token`으로 인증을 시도해보겠습니다.
 
 절차는 로그인과 비슷함으로 내부적인 동작은 생략한 절차입니다.
 
@@ -644,7 +643,7 @@ step3에서 발급받은 jwt token으로 인증을 시도해보겠습니다.
 4. 인증에 성공했다면 `authenticationSuccessHandler`를 통해 `SecurityContext`를 
 생성하고 `SecurityContextHolder`에 보관합니다.
 
-이번 step에도 filter를 구현하기 전에 몇가지 사전 작업을 진행하겠습니다.
+이번 step에도 `filter`를 구현하기 전에 몇가지 사전 작업을 진행하겠습니다.
 
 **FilterSkipMatcher**
 ```java
@@ -716,24 +715,186 @@ public class JwtTokenExtractor {
 우리는 `aaa.bbb.ccc`이 부분만 가져올 수 있도록하는 `JwtTokenExtractor`만듭니다.
 여기서는 `header`값이 이상한 값이 들어왔는지 간단한 검사 작업도 진행합니다.
 
-다음으로 `filter`를 구현하기 전에 `successHandler`와 `failureHandler`를 만들어주겠습니다.
+다음으로 `filter`와 `provider`를 구현하겠습니다.
 
-**JwtLoginAuthenticationSuccessHandler**
+**JwtLoginProcessingFilter**
 ```java
-@Component
-public class JwtLoginAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-    @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
-        response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
-        response.setStatus(HttpStatus.OK.value());
-        response.getWriter().write("인증 성공");
+    @Autowired
+    JwtTokenExtractor tokenExtractor;
+
+
+    public JwtLoginProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher) {
+        super(requiresAuthenticationRequestMatcher);
+    }
+
+
+    @Override
+    public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException, IOException, ServletException {
+        String tokenPayload = request.getHeader("Authorization");
+
+        UsernamePasswordAuthenticationToken token =
+                new UsernamePasswordAuthenticationToken(this.tokenExtractor.extract(tokenPayload),null);
+
+        return super.getAuthenticationManager().authenticate(token);
+    }
+
+    @Override
+    protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
+        //인증에 성공한 경우 해당 사용자에게 권한을 할당
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authResult);
+        //context를 만들고 보관
+        SecurityContextHolder.setContext(context);
+        //남을 필터들에 대해 다 돌음 (필터를 선택해서 돌수도 있다)
+        chain.doFilter(request, response);
+    }
+
+    @Override
+    protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) throws IOException, ServletException {
+        getFailureHandler().onAuthenticationFailure(request, response, failed);
 
     }
 }
 ```
-`successHandler`에서 주의깊게 봐야할 곳은 SecurityContextHolder입니다.
-spring security는 현재 사용자에 대한 Authentication 객체를 구할 때 SecurityContext로부터 가져옵니다.
+기본적으로 `step3`과 비슷하지만 각 `handler`를 따로 구현하지 않았다는 점과
+`successfulAuthentication`에 `SecurityContext`를 생성해준 점이 추가 되었습니다.
+
+**JwtAuthenticationProvider**
+```java
+@Component
+public class JwtAuthenticationProvider implements AuthenticationProvider {
+
+    @Autowired
+    JwtFactory jwtFactory;
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        String token = (String) authentication.getPrincipal();
+        SecurityMember member = jwtFactory.decodeToken(token);
+        return new UsernamePasswordAuthenticationToken(member, member.getPassword(), member.getAuthorities());
+
+    }
+
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+    }
+}
+```
+`provider`에서 인증은 `token`을 분석하여 인증후 객체를 만듭니다.
+
+**SecurityConfig**
+```java
+@Configuration
+@EnableWebSecurity
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public class SecurityConfig extends WebSecurityConfigurerAdapter {
+
+    @Autowired
+    BasicLoginSecurityProvider basicLoginSecurityProvider;
+
+    //1. provider 주입받기
+    @Autowired
+    JwtAuthenticationProvider jwtAuthenticationProvider;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+
+        http
+                .headers().frameOptions().disable();
+        http
+                .csrf().disable();
+        http
+                .authorizeRequests()
+                .antMatchers("/h2-console/**").permitAll();
+        http
+                .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
+                //3. filter등록하기
+                .addFilterBefore(jwtLoginProcessingFilter(),UsernamePasswordAuthenticationFilter.class);
+    }
+
+    protected BasicLoginProcessingFilter basicLoginProcessingFilter() throws Exception {
+        BasicLoginProcessingFilter filter = new BasicLoginProcessingFilter("/login");
+        filter.setAuthenticationManager(super.authenticationManagerBean());
+        return filter;
+    }
+
+    //2. filter 선언하기
+    protected JwtLoginProcessingFilter jwtLoginProcessingFilter() throws Exception{
+        FilterSkipPathMatcher matchar = new FilterSkipPathMatcher(Arrays.asList("/login","/signUp"), "/**");
+        JwtLoginProcessingFilter filter = new JwtLoginProcessingFilter(matchar);
+        filter.setAuthenticationManager(super.authenticationManagerBean());
+        return filter;
+    }
+
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) {
+        auth
+                .authenticationProvider(this.basicLoginSecurityProvider)
+                //4. provider등록하기
+                .authenticationProvider(this.jwtAuthenticationProvider);
+    }
+    
+}
+```
+
+**AuthController**
+```java
+@RestController
+public class AuthController {
+
+    @Autowired
+    MemberService memberService;
+
+    @PostMapping("/signUp")
+    public String signUp(@RequestBody Member member){
+        memberService.singUp(member);
+        return "ok";
+    }
+
+    @GetMapping("/only_user")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public String onlyUser(){
+        return "hi user";
+    }
+
+    @GetMapping("/only_admin")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    public String onlyAdmin(){
+        return "hi admin";
+    }
+}
+```
+
+###실행결과
+```json
+GET http://localhost:8080/only_user
+Authorization: Bearer aaaa.bbbb.cccc
+```
+`login`해서 받은 토큰값으로 접근을하면
+
+```json
+Content-Type: text/plain;charset=UTF-8
+Content-Length: 7
+Date: Wed, 27 Feb 2019 08:02:58 GMT
+
+hi user
+
+Response code: 200; Time: 91ms; Content length: 7 bytes
+```
+
+와 같은 실행 결과를 받을 수 있습니다.
+
+`/only_admin`은 따로 실행해보시길바랍니다
+
 
 <br></br>
 <br></br>
@@ -809,7 +970,8 @@ token = JWT.create()
 
 이렇게 구성된 `JWT`토큰을 디코딩하여 그 정보를 확인하고 인증합니다.
 
-<h2 id="step4-att1">step4 - filter에 관하여</h2>
+<h2 id="step3-att2">filter에 관하여(작성중)</h2>
+
 
 우리는 지금까지 
 
