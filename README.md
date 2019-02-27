@@ -499,6 +499,66 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
 이제 정말 **마지막**으로 `SecurityConfig`에 등록하면 됩니다. 
 
+filter를 등록하기 전에 filter에 관하여 간락하게 설명하겠습니다.
+
+Spring security는 약 10가지의 필터를 순회하여 알맞은 응답값을 찾습니다.
+이 10가지 필터는 security에서 기존에 정해놓은 filter들로서 만약 우리가 위의
+로그인과같이 filter를 커스텀한다면 spring security의 filterChainProxy에
+등록을 시켜주어야합니다.
+
+그 방법으로는 두가지 방법이 있습니다.
+1.  기본 tomcat의 필터에 등록하기
+2.  spring sececurity에 등록하기
+
+🔐** FilterChainProxy 中 **
+```java
+@Override
+		public void doFilter(ServletRequest request, ServletResponse response)
+				throws IOException, ServletException {
+			if (currentPosition == size) {
+				if (logger.isDebugEnabled()) {
+					logger.debug(UrlUtils.buildRequestUrl(firewalledRequest)
+							+ " reached end of additional filter chain; proceeding with original chain");
+				}
+
+				// Deactivate path stripping as we exit the security filter chain
+				this.firewalledRequest.reset();
+
+                //기존 필터 순회
+				originalChain.doFilter(request, response);
+			}
+			else {
+				currentPosition++;
+
+				Filter nextFilter = additionalFilters.get(currentPosition - 1);
+
+				if (logger.isDebugEnabled()) {
+					logger.debug(UrlUtils.buildRequestUrl(firewalledRequest)
+							+ " at position " + currentPosition + " of " + size
+							+ " in additional filter chain; firing Filter: '"
+							+ nextFilter.getClass().getSimpleName() + "'");
+				}
+
+                //spring security 필터 순회
+				nextFilter.doFilter(request, response, this);
+			}
+		}
+```
+위의 코드를 보면 `originalChain.doFilter(request, response);` 와
+`nextFilter.doFilter(request, response, this);`를 보실 수 있습니다.
+`originalChain.doFilter(request, response);`은 기본 `tomcat`에 등록된 
+기본적인 `filte`r들이 돌아가고
+`nextFilter.doFilter(request, response, this);`는 `spring security`에
+사용되는 `filter`들이 돌아갑니다.
+
+`filter`가 작동되는 순서는 아주 중요하며 순서가 바뀌었을 시 그 결과값도 바뀔 수 있음으로
+`filter`를 `nextFilter`에서 돌아가도록 해주어야합니다. 
+
+그 방법으로는 `configure(HttpSecurity http)`에 
+`addFilterBefore(basicLoginProcessingFilter()`, `UsernamePasswordAuthenticationFilter.class)`
+를 추가해 주는 것입니다.
+
+
 **SecurityConfig**
 ```java
 @Configuration
@@ -525,6 +585,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .authorizeRequests()
                 .antMatchers("/h2-console/**").permitAll();
+        http
+                        .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 
     //2.filter를 등록하기
