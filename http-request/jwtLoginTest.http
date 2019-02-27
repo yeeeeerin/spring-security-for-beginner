@@ -1,4 +1,4 @@
-GET http://localhost:8080/only_admin
-Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJST0xFIjoiUk9MRV9VU0VSIiwiaXNzIjoieWVyaW4iLCJFTUFJTCI6InllcmluQHllcmluLmNvbSJ9.Wy57k8utcpskS7XQMPKGFJcwh16pwb0A2fQLrMsnJc0
+GET http://localhost:8080/only_user
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJST0xFIjoiUk9MRV9VU0VSIiwiaXNzIjoieWVyaW4iLCJFTUFJTCI6InllcmlubkB5ZXJpbi5jb20ifQ.F-fOSQEu6_llt-_IKeemaFoqcHrzmFzHhzZ_qsowCSU
 
 ###
