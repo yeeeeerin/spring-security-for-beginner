@@ -445,7 +445,7 @@ public class BasicLoginAuthenticationSuccessHandler implements AuthenticationSuc
 public class BasicLoginAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -467,10 +467,10 @@ public class BasicLoginAuthenticationFailureHandler implements AuthenticationFai
 public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
     @Autowired
-    MemberService memberService;
+    private MemberService memberService;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -499,16 +499,16 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
 이제 정말 **마지막**으로 `SecurityConfig`에 등록하면 됩니다. 
 
-`filter`를 등록하기 전에 `filter`에 관하여 간락하게 설명하겠습니다.
+>`filter`를 등록하기 전에 `filter`에 관하여 간락하게 설명하겠습니다.
 
-`Spring security`는 약 10가지의 필터를 순회하여 알맞은 응답값을 찾습니다.
+>`Spring security`는 약 10가지의 필터를 순회하여 알맞은 응답값을 찾습니다.
 이 10가지 필터는 `security`에서 기존에 정해놓은 `filter`들로서 만약 우리가 위의
 로그인과같이 `filter`를 커스텀한다면 `spring security`의 `filterChainProxy`에
 등록을 시켜주어야합니다.
 
-그 방법으로는 두가지 방법이 있습니다.
-1.  기본 `tomcat`의 필터에 등록하기
-2.  `spring sececurity`에 등록하기
+>그 방법으로는 두가지 방법이 있습니다.
+>1.  기본 `tomcat`의 필터에 등록하기
+>2.  `spring sececurity`에 등록하기
 
 🔐** FilterChainProxy 中 **
 ```java
@@ -544,7 +544,7 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 			}
 		}
 ```
-위의 코드를 보면 `originalChain.doFilter(request, response);` 와
+>위의 코드를 보면 `originalChain.doFilter(request, response);` 와
 `nextFilter.doFilter(request, response, this);`를 보실 수 있습니다.
 `originalChain.doFilter(request, response);`은 기본 `tomcat`에 등록된 
 기본적인 `filter`들이 돌아가고
@@ -567,7 +567,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     //1.BasicLoginSecurityProvider 주입 받기
     @Autowired
-    BasicLoginSecurityProvider basicLoginSecurityProvider;
+    private BasicLoginSecurityProvider basicLoginSecurityProvider;
 
     @Bean
     public PasswordEncoder getPasswordEncoder() {
@@ -722,7 +722,7 @@ public class JwtTokenExtractor {
 public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
     @Autowired
-    JwtTokenExtractor tokenExtractor;
+    private JwtTokenExtractor tokenExtractor;
 
 
     public JwtLoginProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher) {
@@ -767,7 +767,7 @@ public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFi
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     @Autowired
-    JwtFactory jwtFactory;
+    private JwtFactory jwtFactory;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -793,11 +793,11 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
-    BasicLoginSecurityProvider basicLoginSecurityProvider;
+    private BasicLoginSecurityProvider basicLoginSecurityProvider;
 
     //1. provider 주입받기
     @Autowired
-    JwtAuthenticationProvider jwtAuthenticationProvider;
+    private JwtAuthenticationProvider jwtAuthenticationProvider;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -852,7 +852,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 public class AuthController {
 
     @Autowired
-    MemberService memberService;
+    private MemberService memberService;
 
     @PostMapping("/signUp")
     public String signUp(@RequestBody Member member){
