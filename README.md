@@ -84,7 +84,6 @@ public enum  MemberRole {
 
 **MemberRepository**
 ```java
-@Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Optional<Member> findByEmail(String email);
@@ -95,14 +94,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 **MemberService**
 ```java
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class MemberService implements UserDetailsService {
 
-    @Autowired
-    MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
 
-    @Autowired
-    PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Member singUp(Member member){
@@ -189,10 +187,10 @@ public @interface EnableWebSecurity {
 **AuthController**
 ```java
 @RestController
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired
-    MemberService memberService;
+    private final MemberService memberService;
 
     @PostMapping("/signUp")
     public String signUp(@RequestBody Member member){
@@ -326,7 +324,7 @@ public class JwtSettings {
 public class JwtFactory {
 
     @Autowired
-        JwtSettings jwtSettings;
+        private JwtSettings jwtSettings;
     
         /*
          * 유저의 권한정보로 토큰을 만듬(claim에는 여러 정보가 올 수 있다.)
@@ -363,10 +361,10 @@ public class JwtFactory {
 public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
     @Autowired
-    BasicLoginAuthenticationSuccessHandler successHandler;
+    private BasicLoginAuthenticationSuccessHandler successHandler;
 
     @Autowired
-    BasicLoginAuthenticationFailureHandler failureHandler;
+    private BasicLoginAuthenticationFailureHandler failureHandler;
 
     public BasicLoginProcessingFilter(String defaultFilterProcessesUrl) {
         super(defaultFilterProcessesUrl);
@@ -445,7 +443,7 @@ public class BasicLoginAuthenticationSuccessHandler implements AuthenticationSuc
 public class BasicLoginAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -463,14 +461,13 @@ public class BasicLoginAuthenticationFailureHandler implements AuthenticationFai
 이제 마지막으로 `provider`를 만들어 주겠습니다.
 
 ```java
-@Component
 public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
     @Autowired
-    MemberService memberService;
+    private MemberService memberService;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -510,6 +507,18 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 1.  기본 `tomcat`의 필터에 등록하기
 2.  `spring sececurity`에 등록하기
 
+>`filter`를 등록하기 전에 `filter`에 관하여 간락하게 설명하겠습니다.
+
+>`Spring security`는 약 10가지의 필터를 순회하여 알맞은 응답값을 찾습니다.
+이 10가지 필터는 `security`에서 기존에 정해놓은 `filter`들로서 만약 우리가 위의
+로그인과같이 `filter`를 커스텀한다면 spring `security`의 `filterChainProxy`에
+등록을 시켜주어야합니다.
+
+>그 방법으로는 두가지 방법이 있습니다.
+>1.  기본 `tomcat`의 필터에 등록하기
+>2.  `spring sececurity`에 등록하기
+>>>>>>> step3
+
 🔐** FilterChainProxy 中 **
 ```java
 @Override
@@ -544,6 +553,7 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 			}
 		}
 ```
+
 위의 코드를 보면 `originalChain.doFilter(request, response);` 와
 `nextFilter.doFilter(request, response, this);`를 보실 수 있습니다.
 `originalChain.doFilter(request, response);`은 기본 `tomcat`에 등록된 
@@ -558,21 +568,38 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 `addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)`
 를 추가해 주는 것입니다.
 
+
+>위의 코드를 보면 `originalChain.doFilter(request, response);` 와
+`nextFilter.doFilter(request, response, this);`를 보실 수 있습니다.
+`originalChain.doFilter(request, response);`은 기본 `tomcat`에 등록된 
+기본적인 `filte`r들이 돌아가고
+`nextFilter.doFilter(request, response, this);`는 `spring security`에
+사용되는 `filter`들이 돌아갑니다.
+
+>`filter`가 작동되는 순서는 아주 중요하며 순서가 바뀌었을 시 그 결과값도 바뀔 수 있음으로
+`filter`를 `nextFilter`에서 돌아가도록 해주어야합니다. 
+
+>그 방법으로는 `configure(HttpSecurity http)`에 
+`addFilterBefore(basicLoginProcessingFilter()`, `UsernamePasswordAuthenticationFilter.class)`
+를 추가해 주는 것입니다.
+
+
+
 **SecurityConfig**
 ```java
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    //1.BasicLoginSecurityProvider 주입 받기
-    @Autowired
-    BasicLoginSecurityProvider basicLoginSecurityProvider;
+
 
     @Bean
-    public PasswordEncoder getPasswordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -585,23 +612,45 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers("/h2-console/**").permitAll();
         http
-                //2. filter 등록하기
-                .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtLoginProcessingFilter(),UsernamePasswordAuthenticationFilter.class);
+
     }
 
-    //2.filter 선언하기
+    @Bean
+    public BasicLoginSecurityProvider basicLoginSecurityProvider(){
+        return new BasicLoginSecurityProvider();
+
+    }
+
+    @Bean
+    public JwtAuthenticationProvider jwtAuthenticationProvider(){
+        return new JwtAuthenticationProvider();
+    }
+
+    @Bean
     protected BasicLoginProcessingFilter basicLoginProcessingFilter() throws Exception {
         BasicLoginProcessingFilter filter = new BasicLoginProcessingFilter("/login");
         filter.setAuthenticationManager(super.authenticationManagerBean());
         return filter;
     }
-    //3. provider 등록하기
+
+    @Bean
+    protected JwtLoginProcessingFilter jwtLoginProcessingFilter() throws Exception{
+        FilterSkipPathMatcher matchar = new FilterSkipPathMatcher(Arrays.asList("/login","/signUp"), "/**");
+        JwtLoginProcessingFilter filter = new JwtLoginProcessingFilter(matchar);
+        filter.setAuthenticationManager(super.authenticationManagerBean());
+        return filter;
+    }
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth
-                .authenticationProvider(this.basicLoginSecurityProvider);
+                .authenticationProvider(basicLoginSecurityProvider())
+                .authenticationProvider(jwtAuthenticationProvider());
+
     }
-    
+
 }
 ```
 

@@ -5,6 +5,7 @@ import com.example.springsecurityguide.filter.JwtLoginProcessingFilter;
 import com.example.springsecurityguide.provider.BasicLoginSecurityProvider;
 import com.example.springsecurityguide.provider.JwtAuthenticationProvider;
 import com.example.springsecurityguide.utils.FilterSkipPathMatcher;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,16 +20,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.util.Arrays;
 
+
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    BasicLoginSecurityProvider basicLoginSecurityProvider;
 
-    @Autowired
-    JwtAuthenticationProvider jwtAuthenticationProvider;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -49,6 +48,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtLoginProcessingFilter(),UsernamePasswordAuthenticationFilter.class);
+
+    }
+
+    @Bean
+    public BasicLoginSecurityProvider basicLoginSecurityProvider(){
+        return new BasicLoginSecurityProvider();
+
+    }
+
+    @Bean
+    public JwtAuthenticationProvider jwtAuthenticationProvider(){
+        return new JwtAuthenticationProvider();
     }
 
     @Bean
@@ -69,8 +80,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth
-                .authenticationProvider(this.basicLoginSecurityProvider)
-                .authenticationProvider(this.jwtAuthenticationProvider);
+                .authenticationProvider(basicLoginSecurityProvider())
+                .authenticationProvider(jwtAuthenticationProvider());
+
     }
 
 }
