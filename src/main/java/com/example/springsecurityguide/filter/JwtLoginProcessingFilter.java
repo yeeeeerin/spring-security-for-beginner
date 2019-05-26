@@ -19,7 +19,7 @@ import java.io.IOException;
 public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
     @Autowired
-    JwtTokenExtractor tokenExtractor;
+    private JwtTokenExtractor tokenExtractor;
 
 
     public JwtLoginProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher) {
