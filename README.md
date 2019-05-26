@@ -517,7 +517,7 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 >그 방법으로는 두가지 방법이 있습니다.
 >1.  기본 `tomcat`의 필터에 등록하기
 >2.  `spring sececurity`에 등록하기
->>>>>>> step3
+
 
 🔐** FilterChainProxy 中 **
 ```java
@@ -593,7 +593,8 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 @RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-
+    @Autowired
+    JwtAuthenticationProvider jwtAuthenticationProvider;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -620,12 +621,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public BasicLoginSecurityProvider basicLoginSecurityProvider(){
         return new BasicLoginSecurityProvider();
-
-    }
-
-    @Bean
-    public JwtAuthenticationProvider jwtAuthenticationProvider(){
-        return new JwtAuthenticationProvider();
     }
 
     @Bean
@@ -647,7 +642,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(AuthenticationManagerBuilder auth) {
         auth
                 .authenticationProvider(basicLoginSecurityProvider())
-                .authenticationProvider(jwtAuthenticationProvider());
+                .authenticationProvider(this.jwtAuthenticationProvider);
 
     }
 
@@ -771,7 +766,7 @@ public class JwtTokenExtractor {
 public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
     @Autowired
-    JwtTokenExtractor tokenExtractor;
+    private JwtTokenExtractor tokenExtractor;
 
 
     public JwtLoginProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher) {
@@ -812,11 +807,10 @@ public class JwtLoginProcessingFilter extends AbstractAuthenticationProcessingFi
 
 **JwtAuthenticationProvider**
 ```java
-@Component
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     @Autowired
-    JwtFactory jwtFactory;
+    private JwtFactory jwtFactory;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -839,15 +833,9 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    BasicLoginSecurityProvider basicLoginSecurityProvider;
-
-    //1. provider 주입받기
-    @Autowired
-    JwtAuthenticationProvider jwtAuthenticationProvider;
-
+    
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -866,17 +854,29 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/h2-console/**").permitAll();
         http
                 .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
-                //3. filter등록하기
                 .addFilterBefore(jwtLoginProcessingFilter(),UsernamePasswordAuthenticationFilter.class);
+
     }
 
+    @Bean
+    public BasicLoginSecurityProvider basicLoginSecurityProvider(){
+        return new BasicLoginSecurityProvider();
+
+    }
+
+    @Bean
+    public JwtAuthenticationProvider jwtAuthenticationProvider(){
+        return new JwtAuthenticationProvider();
+    }
+
+    @Bean
     protected BasicLoginProcessingFilter basicLoginProcessingFilter() throws Exception {
         BasicLoginProcessingFilter filter = new BasicLoginProcessingFilter("/login");
         filter.setAuthenticationManager(super.authenticationManagerBean());
         return filter;
     }
 
-    //2. filter 선언하기
+    @Bean
     protected JwtLoginProcessingFilter jwtLoginProcessingFilter() throws Exception{
         FilterSkipPathMatcher matchar = new FilterSkipPathMatcher(Arrays.asList("/login","/signUp"), "/**");
         JwtLoginProcessingFilter filter = new JwtLoginProcessingFilter(matchar);
@@ -887,11 +887,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth
-                .authenticationProvider(this.basicLoginSecurityProvider)
-                //4. provider등록하기
-                .authenticationProvider(this.jwtAuthenticationProvider);
+                .authenticationProvider(basicLoginSecurityProvider())
+                .authenticationProvider(jwtAuthenticationProvider());
+
     }
-    
+
 }
 ```
 
@@ -901,7 +901,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 public class AuthController {
 
     @Autowired
-    MemberService memberService;
+    private MemberService memberService;
 
     @PostMapping("/signUp")
     public String signUp(@RequestBody Member member){

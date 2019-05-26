@@ -6,7 +6,6 @@ import com.example.springsecurityguide.provider.BasicLoginSecurityProvider;
 import com.example.springsecurityguide.provider.JwtAuthenticationProvider;
 import com.example.springsecurityguide.utils.FilterSkipPathMatcher;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -26,8 +25,6 @@ import java.util.Arrays;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-
 
     @Bean
     public PasswordEncoder passwordEncoder() {

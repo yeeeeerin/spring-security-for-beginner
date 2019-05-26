@@ -9,11 +9,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
-@Component
 public class JwtAuthenticationProvider implements AuthenticationProvider {
 
     @Autowired
-    JwtFactory jwtFactory;
+    private JwtFactory jwtFactory;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
