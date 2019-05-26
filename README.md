@@ -82,7 +82,6 @@ public enum  MemberRole {
 
 **MemberRepository**
 ```java
-@Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
     Optional<Member> findByEmail(String email);
@@ -93,14 +92,13 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 **MemberService**
 ```java
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class MemberService implements UserDetailsService {
 
-    @Autowired
-    MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
 
-    @Autowired
-    PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public Member singUp(Member member){
@@ -188,10 +186,10 @@ public @interface EnableWebSecurity {
 **AuthController**
 ```java
 @RestController
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired
-    MemberService memberService;
+    private final MemberService memberService;
 
     @PostMapping("/signUp")
     public String signUp(@RequestBody Member member){
