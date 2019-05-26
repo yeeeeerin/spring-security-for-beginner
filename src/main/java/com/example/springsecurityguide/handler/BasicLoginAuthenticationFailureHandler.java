@@ -17,7 +17,7 @@ import java.io.IOException;
 public class BasicLoginAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
