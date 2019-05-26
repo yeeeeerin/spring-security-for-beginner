@@ -2,6 +2,7 @@ package com.example.springsecurityguide.config;
 
 import com.example.springsecurityguide.filter.BasicLoginProcessingFilter;
 import com.example.springsecurityguide.provider.BasicLoginSecurityProvider;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,10 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    BasicLoginSecurityProvider basicLoginSecurityProvider;
 
     @Bean
     public PasswordEncoder getPasswordEncoder() {
@@ -42,6 +41,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
+    public BasicLoginSecurityProvider basicLoginSecurityProvider(){
+        return new BasicLoginSecurityProvider();
+    }
+
+    @Bean
     protected BasicLoginProcessingFilter basicLoginProcessingFilter() throws Exception {
         BasicLoginProcessingFilter filter = new BasicLoginProcessingFilter("/login");
         filter.setAuthenticationManager(super.authenticationManagerBean());
@@ -51,7 +55,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth
-                .authenticationProvider(this.basicLoginSecurityProvider);
+                .authenticationProvider(basicLoginSecurityProvider());
     }
 
 

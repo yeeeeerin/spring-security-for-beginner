@@ -43,7 +43,6 @@ public class BasicLoginAuthenticationSuccessHandler implements AuthenticationSuc
         response.setContentType(MediaType.APPLICATION_JSON_UTF8_VALUE);
         response.setStatus(HttpStatus.OK.value());
         response.getWriter().write(objectMapper.writeValueAsString(tokenDto));
-        //objectMapper.writeValue(response.getWriter(), tokenDto);
 
     }
 }

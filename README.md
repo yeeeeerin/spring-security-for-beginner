@@ -323,7 +323,7 @@ public class JwtSettings {
 public class JwtFactory {
 
     @Autowired
-        JwtSettings jwtSettings;
+        private JwtSettings jwtSettings;
     
         /*
          * 유저의 권한정보로 토큰을 만듬(claim에는 여러 정보가 올 수 있다.)
@@ -359,10 +359,10 @@ public class JwtFactory {
 public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
     @Autowired
-    BasicLoginAuthenticationSuccessHandler successHandler;
+    private BasicLoginAuthenticationSuccessHandler successHandler;
 
     @Autowired
-    BasicLoginAuthenticationFailureHandler failureHandler;
+    private BasicLoginAuthenticationFailureHandler failureHandler;
 
     public BasicLoginProcessingFilter(String defaultFilterProcessesUrl) {
         super(defaultFilterProcessesUrl);
@@ -441,7 +441,7 @@ public class BasicLoginAuthenticationSuccessHandler implements AuthenticationSuc
 public class BasicLoginAuthenticationFailureHandler implements AuthenticationFailureHandler {
 
     @Autowired
-    ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -459,14 +459,13 @@ public class BasicLoginAuthenticationFailureHandler implements AuthenticationFai
 이제 마지막으로 `provider`를 만들어 주겠습니다.
 
 ```java
-@Component
 public class BasicLoginSecurityProvider implements AuthenticationProvider {
 
     @Autowired
-    MemberService memberService;
+    private MemberService memberService;
 
     @Autowired
-    PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
@@ -564,10 +563,7 @@ public class BasicLoginSecurityProvider implements AuthenticationProvider {
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    //1.BasicLoginSecurityProvider 주입 받기
-    @Autowired
-    BasicLoginSecurityProvider basicLoginSecurityProvider;
-
+   
     @Bean
     public PasswordEncoder getPasswordEncoder() {
         return new BCryptPasswordEncoder();
@@ -586,6 +582,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                         .addFilterBefore(basicLoginProcessingFilter(), UsernamePasswordAuthenticationFilter.class);
     }
+    
+    //1.BasicLoginSecurityProvider 빈 생성
+    @Bean
+    public BasicLoginSecurityProvider basicLoginSecurityProvider(){
+        return new BasicLoginSecurityProvider();
+    }
 
     //2.filter를 등록하기
     @Bean
@@ -598,7 +600,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(AuthenticationManagerBuilder auth) {
         auth
-                .authenticationProvider(this.basicLoginSecurityProvider);
+                .authenticationProvider(basicLoginSecurityProvider());
     }
     
 }

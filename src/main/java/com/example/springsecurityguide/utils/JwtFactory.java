@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class JwtFactory {
 
     @Autowired
-    JwtSettings jwtSettings;
+    private JwtSettings jwtSettings;
 
     /*
      * 유저의 권한정보로 토큰을 만듬(claim에는 여러 정보가 올 수 있다.)

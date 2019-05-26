@@ -4,6 +4,8 @@ import com.example.springsecurityguide.dto.LoginMemberDto;
 import com.example.springsecurityguide.handler.BasicLoginAuthenticationFailureHandler;
 import com.example.springsecurityguide.handler.BasicLoginAuthenticationSuccessHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -11,6 +13,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -21,11 +24,12 @@ import java.util.Collections;
 
 public class BasicLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 
-    @Autowired
-    BasicLoginAuthenticationSuccessHandler successHandler;
 
     @Autowired
-    BasicLoginAuthenticationFailureHandler failureHandler;
+    private BasicLoginAuthenticationSuccessHandler successHandler;
+
+    @Autowired
+    private BasicLoginAuthenticationFailureHandler failureHandler;
 
     public BasicLoginProcessingFilter(String defaultFilterProcessesUrl) {
         super(defaultFilterProcessesUrl);
